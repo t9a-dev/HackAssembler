@@ -1,0 +1,35 @@
+[package]
+name = "hack-assembler"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "HackAssembler"
+path = "src/bin/main.rs"
+
+[workspace]
+members = ["parser","code"]
+
+[workspace.package]
+edition = "2021"
+publish = false
+license = "MIT"
+
+[workspace.dependencies]
+parser = {path = "./parser"}
+code = {path = "./code"}
+anyhow = "1.0.97"
+rand = "0.9.0"
+
+[workspace.dev-dependencies]
+
+[dependencies]
+anyhow.workspace = true
+parser.workspace = true
+code.workspace = true
+rand.workspace = true
+
+[dev-dependencies]
+rand.workspace = true
