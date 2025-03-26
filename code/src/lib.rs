@@ -1,15 +1,15 @@
 use anyhow::Result;
 
-pub struct Code{}
+pub struct Code {}
 
-impl Code{
-    pub fn dest(v: u8) -> Result<String>{
+impl Code {
+    pub fn dest(v: u8) -> Result<String> {
         todo!()
     }
-    pub fn comp(v: u8) -> Result<String>{
+    pub fn comp(v: u8) -> Result<String> {
         todo!()
     }
-    pub fn jump(v: u8) -> Result<String>{
+    pub fn jump(v: u8) -> Result<String> {
         todo!()
     }
 }
@@ -19,8 +19,8 @@ mod tests {
     use crate::Code;
 
     #[test]
-    fn it_works() -> Result<()>{
-        let v= 10;
+    fn it_works() -> Result<()> {
+        let v = 10;
         let _dest = Code::dest(v);
         let _comp = Code::comp(v);
         let _jump = Code::jump(v);
