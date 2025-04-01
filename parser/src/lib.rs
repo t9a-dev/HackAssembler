@@ -30,11 +30,11 @@ impl Parser {
         }
     }
 
-    fn has_more_lines(&mut self) -> Result<bool> {
+    pub fn has_more_lines(&mut self) -> Result<bool> {
         Ok(self.assembly.fill_buf()?.iter().next().is_some())
     }
 
-    fn advance(&mut self) -> Result<()> {
+    pub fn advance(&mut self) -> Result<()> {
         // //で始まるコメント行と空白を無視して次の行を読み込む
         while self.has_more_lines()? {
             self.current_instruction = match self.assembly.as_mut().lines().next().unwrap() {
@@ -50,7 +50,7 @@ impl Parser {
         Ok(())
     }
 
-    fn instruction_type(&self) -> Result<Option<InstructionType>> {
+    pub fn instruction_type(&self) -> Result<Option<InstructionType>> {
         match &self.current_instruction {
             Some(instruction) if instruction.starts_with(A_INSTRUCTION_TOKEN) => {
                 Ok(Some(InstructionType::A))
@@ -61,7 +61,10 @@ impl Parser {
             {
                 Ok(Some(InstructionType::L))
             }
-            Some(instruction) if instruction.contains(C_INSTRUCTION_TOKEN_SEMICOLON) => {
+            Some(instruction)
+                if instruction.contains(C_INSTRUCTION_TOKEN_SEMICOLON)
+                    || instruction.contains(C_INSTRUCTION_TOKEN_EQUAL) =>
+            {
                 Ok(Some(InstructionType::C))
             }
             Some(instruction) => panic!(
@@ -72,7 +75,7 @@ impl Parser {
         }
     }
 
-    fn symbol(&self) -> Result<Option<String>> {
+    pub fn symbol(&self) -> Result<Option<String>> {
         match self.instruction_type()?.unwrap() {
             InstructionType::A => Ok(Some(
                 self.current_instruction
@@ -94,83 +97,67 @@ impl Parser {
         }
     }
 
-    fn dest(&self) -> Result<Option<String>> {
+    pub fn dest(&self) -> Result<&str> {
         if self.instruction_type()?.unwrap() != InstructionType::C {
-            return Ok(None);
+            return Ok("");
         }
         match &self.current_instruction {
-            Some(instruction) if instruction.contains(C_INSTRUCTION_TOKEN_EQUAL) => Ok(Some(
-                instruction
-                    .split(C_INSTRUCTION_TOKEN_EQUAL)
-                    .into_iter()
-                    .nth(0)
-                    .unwrap()
-                    .to_string(),
-            )),
-            Some(_) => Ok(None),
-            None => Ok(None),
+            Some(instruction) if instruction.contains(C_INSTRUCTION_TOKEN_EQUAL) => Ok(instruction
+                .split(C_INSTRUCTION_TOKEN_EQUAL)
+                .into_iter()
+                .nth(0)
+                .unwrap()),
+            Some(_) => Ok(""),
+            None => Ok(""),
         }
     }
 
-    fn comp(&self) -> Result<Option<String>> {
+    pub fn comp(&self) -> Result<&str> {
         if self.instruction_type()?.unwrap() != InstructionType::C {
-            return Ok(None);
+            return Ok("");
+        }
+        match &self.current_instruction {
+            Some(instruction) => {
+                if instruction.contains(C_INSTRUCTION_TOKEN_EQUAL) {
+                    Ok(instruction
+                        .split(&[C_INSTRUCTION_TOKEN_EQUAL, C_INSTRUCTION_TOKEN_SEMICOLON][..])
+                        .into_iter()
+                        .nth(1)
+                        .unwrap())
+                } else {
+                    Ok(instruction
+                        .split(C_INSTRUCTION_TOKEN_SEMICOLON)
+                        .into_iter()
+                        .nth(0)
+                        .unwrap())
+                }
+            }
+            None => Ok(""),
+        }
+    }
+
+    pub fn jump(&self) -> Result<&str> {
+        if self.instruction_type()?.unwrap() != InstructionType::C {
+            return Ok("");
         }
         match &self.current_instruction {
             Some(instruction) if instruction.contains(C_INSTRUCTION_TOKEN_SEMICOLON) => {
                 if instruction.contains(C_INSTRUCTION_TOKEN_EQUAL) {
-                    Ok(Some(
-                        instruction
-                            .split(&[C_INSTRUCTION_TOKEN_EQUAL, C_INSTRUCTION_TOKEN_SEMICOLON][..])
-                            .into_iter()
-                            .nth(1)
-                            .unwrap()
-                            .to_string(),
-                    ))
+                    Ok(instruction
+                        .split(&[C_INSTRUCTION_TOKEN_EQUAL, C_INSTRUCTION_TOKEN_SEMICOLON][..])
+                        .into_iter()
+                        .nth(2)
+                        .unwrap())
                 } else {
-                    Ok(Some(
-                        instruction
-                            .split(C_INSTRUCTION_TOKEN_SEMICOLON)
-                            .into_iter()
-                            .nth(0)
-                            .unwrap()
-                            .to_string(),
-                    ))
+                    Ok(instruction
+                        .split(C_INSTRUCTION_TOKEN_SEMICOLON)
+                        .into_iter()
+                        .nth(1)
+                        .unwrap())
                 }
             }
-            Some(_) => Ok(None),
-            None => Ok(None),
-        }
-    }
-
-    fn jump(&self) -> Result<Option<String>> {
-        if self.instruction_type()?.unwrap() != InstructionType::C {
-            return Ok(None);
-        }
-        match &self.current_instruction {
-            Some(instruction) if instruction.contains(C_INSTRUCTION_TOKEN_SEMICOLON) => {
-                if instruction.contains(C_INSTRUCTION_TOKEN_EQUAL) {
-                    Ok(Some(
-                        instruction
-                            .split(&[C_INSTRUCTION_TOKEN_EQUAL, C_INSTRUCTION_TOKEN_SEMICOLON][..])
-                            .into_iter()
-                            .nth(2)
-                            .unwrap()
-                            .to_string(),
-                    ))
-                } else {
-                    Ok(Some(
-                        instruction
-                            .split(C_INSTRUCTION_TOKEN_SEMICOLON)
-                            .into_iter()
-                            .nth(1)
-                            .unwrap()
-                            .to_string(),
-                    ))
-                }
-            }
-            Some(_) => Ok(None),
-            None => Ok(None),
+            Some(_) => Ok(""),
+            None => Ok(""),
         }
     }
 }
@@ -308,25 +295,30 @@ mod tests {
 
     #[test]
     fn test_dest_comp_jump() -> Result<()> {
-        let file_content = "D=D+1;JLE\nDM=D|A;JLT\nD&A;JMP";
+        let file_content = "D=D+1;JLE\nDM=D|A;JLT\nD&A;JMP\nD=A";
         let test_file = create_test_file(&file_content);
         let mut parser = Parser::new(&test_file);
         let _ = fs::remove_file(test_file);
 
         parser.advance()?;
-        assert_eq!(parser.dest()?.unwrap(), "D");
-        assert_eq!(parser.comp()?.unwrap(), "D+1");
-        assert_eq!(parser.jump()?.unwrap(), "JLE");
+        assert_eq!(parser.dest()?, "D");
+        assert_eq!(parser.comp()?, "D+1");
+        assert_eq!(parser.jump()?, "JLE");
 
         parser.advance()?;
-        assert_eq!(parser.dest()?.unwrap(), "DM");
-        assert_eq!(parser.comp()?.unwrap(), "D|A");
-        assert_eq!(parser.jump()?.unwrap(), "JLT");
+        assert_eq!(parser.dest()?, "DM");
+        assert_eq!(parser.comp()?, "D|A");
+        assert_eq!(parser.jump()?, "JLT");
 
         parser.advance()?;
-        assert_eq!(parser.dest()?, None);
-        assert_eq!(parser.comp()?.unwrap(), "D&A");
-        assert_eq!(parser.jump()?.unwrap(), "JMP");
+        assert_eq!(parser.dest()?, "");
+        assert_eq!(parser.comp()?, "D&A");
+        assert_eq!(parser.jump()?, "JMP");
+
+        parser.advance()?;
+        assert_eq!(parser.dest()?, "D");
+        assert_eq!(parser.comp()?, "A");
+        assert_eq!(parser.jump()?, "");
         Ok(())
     }
 }
