@@ -39,8 +39,8 @@ impl Parser {
         while self.has_more_lines()? {
             self.current_instruction = match self.assembly.as_mut().lines().next().unwrap() {
                 Ok(line) if line.chars().all(char::is_whitespace) => None, //空白の場合は無視
-                Ok(line) if line.starts_with(COMMENT_OUT_TOKEN) => None,   //コメント行の場合は無視
-                Ok(line) => Some(line),
+                Ok(line) if line.trim().starts_with(COMMENT_OUT_TOKEN) => None,   //コメント行の場合は無視
+                Ok(line) => Some(line.trim().to_string()),
                 Err(_) => None,
             };
             if self.current_instruction.is_some() {
