@@ -1,2 +1,3 @@
-# nand2tetrisの6章のHackAssembler
-[コンピュータシステムの理論と実装 第2版](https://www.oreilly.co.jp/books/9784814400874/)の6章で実装した`HackAssembler`
+# 概要
+[コンピュータシステムの理論と実装 第2版](https://www.oreilly.co.jp/books/9784814400874/)6章で学んだ内容に基づいて、個人的に実装した Hack Assembler です。
+学習目的で作成したコードを公開しています。
