@@ -49,7 +49,7 @@ fn first_pass(asm_file_path: String, symbol_table: &mut SymbolTable) -> Result<(
             None => (),
         }
 
-        if asm_parser.has_more_lines()? == false {
+        if !(asm_parser.has_more_lines()?) {
             break;
         }
     }
@@ -68,7 +68,7 @@ fn second_pass(asm_file_path: String, symbol_table: &mut SymbolTable) -> Result<
         .expect("get hack save dir failed.")
         .join(format!("{}.{}", file_name, "hack"));
     let mut hack_file = File::create(&hack_file_path).unwrap();
-    let mut asm_parser = parser::Parser::new(&asm_file_path.as_str());
+    let mut asm_parser = parser::Parser::new(asm_file_path.as_str());
     let mut variable_ram_address: u16 = 16;
 
     while asm_parser.has_more_lines()? {
@@ -112,7 +112,7 @@ fn second_pass(asm_file_path: String, symbol_table: &mut SymbolTable) -> Result<
             None => (),
         }
 
-        if asm_parser.has_more_lines()? == false {
+        if !(asm_parser.has_more_lines()?) {
             break;
         }
     }
